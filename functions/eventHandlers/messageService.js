@@ -24,27 +24,54 @@ exports.handler = async function (context, event, callback) {
                 console.log('No Active Conversations Creating One now')
                 conversation = await client.conversations.conversations
                     .create({
-                        friendlyName: `Engage Sydney Conversation`
+                        friendlyName: `Engaging Conversation #1`
                     })
                 console.log(`Created Conversation SID:${conversation.sid}`)
             }
 
-            // Add User as participant
-            console.log(`Adding participant: ${event.From} ProxyAddress:${event.To}`);
-            let attributes = JSON.stringify({
-                'name': `${name}`
-            });
+            var conversationIterator = 0;
+            var addedToConversation = false;
+            do {
+                try {
+                    // Add User as participant
+                    console.log(`Adding participant: ${event.From} ProxyAddress:${event.To} to Conversation:${conversationIterator}`);
+                    let attributes = JSON.stringify({
+                        'name': `${name}`
+                    });
 
-            console.log(attributes)
-            let participant = await client.conversations
-                .conversations(conversation.sid)
-                .participants
-                .create({
-                    'messagingBinding.address': `${event.From}`,
-                    'messagingBinding.proxyAddress': `${event.To}`,
-                    'attributes': attributes
-            })
-            console.log(participant);
+                    console.log(attributes)
+                    let participant = await client.conversations
+                        .conversations(conversation.sid)
+                        .participants
+                        .create({
+                            'messagingBinding.address': `${event.From}`,
+                            'messagingBinding.proxyAddress': `${event.To}`,
+                            'attributes': attributes
+                    })
+                    console.log(participant);
+                    addedToConversation = true;
+                } catch (err) {
+                    console.log(err)
+                    if ((err.code == 50417) || (err.code == 50418)) {
+                        //Check if there is another conversation in our list
+                        conversationIterator++;
+                        conversation = convList[conversationIterator];
+                        if (conversation) {
+                            console.log(`Trying again with ${conversation.friendlyName}`)
+                        } else {   
+                            console.log('No Active Conversations Creating One now')
+                            conversation = await client.conversations.conversations
+                                .create({
+                                    friendlyName: `Engaging Conversation #${conversationIterator + 1}`
+                                })
+                            console.log(`Created Conversation SID:${conversation.sid}`)
+                        }
+                    } else {
+                        throw err;
+                    }
+                }
+            } 
+            while (!addedToConversation);
 
             twiml = 'Welcome to the Engage Conversations Demo - To leave at anytime reply \'@leave\'';
         } catch (err) {

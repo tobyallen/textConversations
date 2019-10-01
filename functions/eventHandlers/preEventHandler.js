@@ -66,7 +66,6 @@ async function getParticipant(author, conversationSid) {
         .conversations(conversationSid)
         .participants
         .list();
-        // .list({ limit: 50 })
     console.log(`Got ${participants.length} Participants`)
 
     var filterSMS = participants.filter(function (part) {
