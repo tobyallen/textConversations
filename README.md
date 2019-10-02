@@ -6,10 +6,12 @@ ACCOUNT_SID=
 AUTH_TOKEN=
 
 *Create a TwiML bin that will play a simple message copy the URL and past below. e.g. the below will play a bell 10 times.*
+```
 <?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Play loop="10">https://api.twilio.com/cowbell.mp3</Play>
 </Response>
+```
 
 CALL_TWIML_BIN=
 
