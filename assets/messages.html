@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello React!</title>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <div id="example"></div>
+  <script type="text/babel">
+    const MESSAGES_URL = '/conversationHandlers/listMessages';
+    const DELETE_URL = '/conversationHandlers/deleteResource'
+
+
+    let index = 0;
+    class Participants extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+          isFetching: false,
+          Messages : []
+        };
+    }
+
+    componentDidMount() {
+        let search = window.location.search;
+        let sid = search.replace('?sid=','');
+        this.setState({...this.state, convSID: sid});
+        this.fetchMessages(sid);
+
+        // this.timer = setInterval(() => this.fetchConv(), 5000);
+    }
+
+    async fetchMessages(sid) {
+            try {
+                this.setState({...this.state, isFetching: true});
+                let url = MESSAGES_URL + '?sid=' + sid;
+                console.log(url)
+                const response = await axios.get(url);
+                this.setState({Messages: response.data, isFetching: false, convSID: sid});
+            } catch (e) {
+                console.log(e);
+                this.setState({...this.state, isFetching: false, convSID: sid});
+            }
+    };
+
+    async removeMessage(sid) {
+      try {
+        let url = DELETE_URL + '?conversation=' + this.state.convSID + '&message=' + sid;
+        console.log(url)
+        const response = await axios.get(url);
+        console.log('Deletion Response', response.data)
+      } catch (e) {
+          console.log(e);
+          this.setState({...this.state, isFetching: false, convSID: sid});
+      }
+      console.log(`Called Delete: ${sid}`)
+      this.fetchMessages(this.state.convSID);
+    }
+  
+
+    render() {
+      if ( this.state.Messages.length == 0 ) {
+        return (
+          <div>
+            <p>{this.state.isFetching ? 'Fetching Data...' : ''}</p>
+            <ul>
+                <li key='0'>No Messages
+                </li>
+              </ul>
+          </div>
+            
+        );
+      } else { 
+        let messageList = this.state.Messages.map(function(message) {
+          return (
+              <li key={message.sid}> {message.author} said: "{message.body}" - 
+                  <span onClick={this.removeMessage.bind(this, message.sid)} style={{'color': 'red'}}> Delete?</span>
+              </li>
+          );
+        }.bind(this));
+
+        return (
+            <div>
+              <p>{this.state.isFetching ? 'Fetching Data...' : ''}</p>
+                <ul>
+                {messageList}
+                </ul>
+            </div>
+        );
+      }
+  };
+}
+
+
+
+ReactDOM.render(
+<Participants />,
+document.getElementById('example')
+);
+</script>
+</body>
+
+</html>

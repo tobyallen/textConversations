@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello React!</title>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <div id="example"></div>
+  <script type="text/babel">
+    const CONVERSATIONS_URL = '/conversationHandlers/listConversations';
+    const DELETE_URL = '/conversationHandlers/deleteResource'
+
+    let index = 0;
+    class Conversations extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+          isFetching: false,
+          Conversations : []
+        };
+    }
+
+    componentDidMount() {
+        this.fetchConv();
+        // this.timer = setInterval(() => this.fetchConv(), 5000);
+    }
+
+    async fetchConv() {
+      try {
+          this.setState({...this.state, isFetching: true});
+          const response = await axios.get(CONVERSATIONS_URL);
+          this.setState({Conversations: response.data, isFetching: false});
+      } catch (e) {
+          console.log(e);
+          this.setState({...this.state, isFetching: false});
+      }
+    };
+
+    async deleteConversation(sid) {
+
+      try {
+        url = DELETE_URL + '?conversation=' + sid;
+        const response = await axios.get(url);
+        console.log('Deletion Response', response.data)
+      } catch (e) {
+          console.log(e);
+          this.setState({...this.state, isFetching: false});
+      }
+      console.log(`Called Delete: ${sid}`)
+      fetchConv();
+    }
+  
+
+    render() {
+      if ( this.state.Conversations.length == 0 ) {
+        return (
+          <div>
+            <ul>
+                <li key='0'>No Conversations
+                </li>
+              </ul>
+          </div>
+            
+        );
+      } else { 
+        let convList = this.state.Conversations.map(function(conv) {
+          console.log(conv)
+          console.log(conv.sid)
+          console.log(conv.friendlyName)
+          return (
+              <li key={conv.sid}> { conv.friendlyName ? conv.friendlyName : conv.sid }-
+                  <a href={'/participants.html?sid='+conv.sid}>Participants</a>-
+                  <a href={'/messages.html?sid='+conv.sid}>Messages</a>
+                  <span onClick={this.deleteConversation.bind(this, conv.sid)} style={{'color': 'red'}}> Delete?</span>
+              </li>
+          );
+        }.bind(this));
+
+        return (
+            <div>
+              <p>{this.state.isFetching ? 'Fetching Data...' : ''}</p>
+                <ul>
+                {convList}
+                </ul>
+            </div>
+        );
+      }
+  };
+}
+
+
+
+ReactDOM.render(
+<Conversations />,
+document.getElementById('example')
+);
+</script>
+</body>
+
+</html>
