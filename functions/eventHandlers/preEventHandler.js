@@ -1,5 +1,8 @@
 //Conversations Pre Event Hook
 
+// To DO: Update Sending Numbers
+// Add logic to get sending number, add logic to not send messages to chat partipants
+
 twilio = require('twilio');
 
 exports.handler = async function (context, event, callback) {
@@ -11,49 +14,76 @@ exports.handler = async function (context, event, callback) {
     console.log(event);
 
     if (event.EventType == 'onMessageAdd') {
-
         let participant = await getParticipant(event.Author, event.ConversationSid);
-        let name = JSON.parse(participant.attributes).name 
-        console.log(`Message from ${name}`);
+        var isChat = participant.identity ? true : true;
+        var name = participant.identity ? author : JSON.parse(participant.attributes).name
+        console.log(`Message from ${name} isChat:${isChat}`);
+        //Default Response
+        response.setBody({
+            'body': `[${name}]:${event.Body}`
+        });
+        if (!isChat) {
+            var fromNum = participant.messagingBinding.proxy_address;
+            var toNum = participant.messagingBinding.address;
+            var checkCredit = RegExp('([0-9- ]{15,16})');
+            if (checkCredit.test(event.Body)) {
+                console.log('Detected a Credit Card')
+                let msg = await client.messages
+                    .create({
+                        body: 'Hi there, we detected a credit card. Never send credit card information over in an SMS.',
+                        from: fromNum,
+                        to: toNum
+                    })
+                console.log(msg.body);
+                response.setBody({
+                    'body': 'Chief Compliance Bot- A credit card was redacted.',
+                    'author': 'Chief Compliance Bot'
+                });
+            } else if (event.Body.startsWith('@leave')) {
+                console.log(`Request from ${name} to leave the conversation service`);
 
-        var checkCredit = RegExp('([0-9- ]{15,16})');
-        if (checkCredit.test(event.Body)) {
-            console.log('Detected a Credit Card')
-            let msg = await client.messages
-                .create({
-                    body: 'Hi there, we detected a credit card. Never send credit card information over in an SMS.',
-                    messagingServiceSid: process.env.CONV_MSG_SRV_SID,
-                    to: event.Author
-                })
-            console.log(msg.body);
-            response.setBody({
-                'body': 'Chief Compliance Bot- A credit card was redacted.',
-                'author': 'Chief Compliance Bot'
-            });
-        } else if (event.Body.startsWith('@leave')) {
-            console.log(`Request from ${name} to leave the conversation service`);
+                let removal = await client.conversations
+                    .conversations(event.ConversationSid)
+                    .participants(participant.sid)
+                    .remove()
 
-            let removal = await client.conversations
-                .conversations(event.ConversationSid)
-                .participants(participant.sid)
-                .remove()
+                console.log(removal);
 
-            console.log(removal);
+                let msg = await client.messages
+                    .create({
+                        body: 'We\'ve removed you. To rejoin reply back with \'@join <Your Name>\'',
+                        from: fromNum,
+                        to: toNum
+                    })
 
-            let msg = await client.messages
-                .create({
-                    body: 'We\'ve removed you. To rejoin reply back with \'@join <Your Name>\'',
-                    messagingServiceSid: process.env.CONV_MSG_SRV_SID,
-                    to: event.Author
-                })
+                response.setBody({
+                    'body': `[${name} has left the conversation.]`
+                });
+            } else if (event.Body.startsWith('@call')) {
+                console.log(`Request from ${name} to for a call`);
 
-            response.setBody({
-                'body': `[${name} has left the conversation.]`
-            });
-        } else {
-            response.setBody({
-                'body': `[${name}]:${event.Body}`
-            });
+                let call = await client.calls
+                    .create({
+                        url: process.env.CALL_TWIML_BIN,
+                        from: fromNum,
+                        to: toNum 
+                    })
+
+                console.log(call);
+                // Set Status to 403 to reject the message and not post to channel.
+                response.setStatusCode(403);
+            } else if (event.Body.startsWith('@help')) {
+                console.log(`Request from ${name} for a help message`);
+
+                let msg = await client.messages
+                    .create({
+                        body: `Hi ${name}, To leave at anytime reply \'@leave\' To get a get a test call send \'@call\' To view help message send \'@help\'`,
+                        from: fromNum,
+                        to: toNum
+                    })
+                // Set Status to 403 to reject the message and not post to channel.
+                response.setStatusCode(403);
+            }
         }
     }
     callback(null, response);
@@ -68,16 +98,29 @@ async function getParticipant(author, conversationSid) {
         .list();
     console.log(`Got ${participants.length} Participants`)
 
+    // Check if we're looking for a chat users
+    var filteredIdentity = participants.filter(function (part) {
+        return part.identity == author
+    });
+    // return the first one even if we have multiple.
+    if ( filteredIdentity.length > 0 ) {
+        console.log('Chat Partipant');
+        return filteredIdentity[0];
+    }
+
+    // If we're looking for an SMS/Whatapps user filter them out of the full list
     var filterSMS = participants.filter(function (part) {
         return part.identity == null
     });
-
-    var filtered = filterSMS.filter( function (part) {
+    var filteredAuthor = filterSMS.filter( function (part) {
         console.log(`Comparing ${part.messagingBinding.address} with ${author}`);
         return part.messagingBinding.address == author
     });
     
-    console.log(`Got ${filtered.length} Filtered Participants`);
-    console.log(filtered);
-    return filtered[0];
+    console.log(`Got ${filteredAuthor.length} Filtered Participants`);
+    if ( filteredAuthor.length > 0 ) {
+        console.log('SMS/WhatsApp Participant');
+        return filteredAuthor[0];
+    }
+    return '';
 }

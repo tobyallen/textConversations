@@ -73,7 +73,7 @@ exports.handler = async function (context, event, callback) {
             } 
             while (!addedToConversation);
 
-            twiml = 'Welcome to the Engage Conversations Demo - To leave at anytime reply \'@leave\'';
+            twiml = 'Welcome to the Engage Conversations Demo - To leave at anytime reply \'@leave\' To get a get a test call send \'@call\' To view help message send \'@help\'';
         } catch (err) {
             twiml = 'Uh Oh! We couldn\'t add you to a conversation right now.';
             console.log(err)

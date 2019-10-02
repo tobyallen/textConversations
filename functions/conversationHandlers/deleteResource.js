@@ -12,6 +12,7 @@ exports.handler = async function (context, event, callback) {
   response.appendHeader("Access-Control-Allow-Methods", "GET, POST");
   response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
   response.appendHeader("Content-Type", "application/json");
+  console.log(event)
 
   try {
     if ( event.conversation && event.participant ) {

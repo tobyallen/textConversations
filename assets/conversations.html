@@ -45,7 +45,7 @@
     async deleteConversation(sid) {
 
       try {
-        url = DELETE_URL + '?conversation=' + sid;
+        let url = DELETE_URL + '?conversation=' + sid;
         const response = await axios.get(url);
         console.log('Deletion Response', response.data)
       } catch (e) {
