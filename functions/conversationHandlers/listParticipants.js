@@ -1,7 +1,6 @@
 // Retrieve Conversation Participants
-twilio = require('twilio');
 exports.handler = async function (context, event, callback) {
-  client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  client = context.getTwilioClient();
   const response = new Twilio.Response();
 
   response.appendHeader("Access-Control-Allow-Origin", "*");
@@ -16,8 +15,7 @@ exports.handler = async function (context, event, callback) {
         .conversations(convSID)
         .participants
         .list();
-      console.log(conversation.friendlyName);
-      response.setBody(conversation);
+      response.setBody(participants);
     }
     callback(null, response)
   } catch (err) {

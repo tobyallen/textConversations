@@ -1,9 +1,6 @@
 // Handle Inbound Messages to the Converations Message Service
-twilio = require('twilio');
-
 exports.handler = async function (context, event, callback) {
-    client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
+    client = context.getTwilioClient();
     console.log(event);
     let twiml = ""
     console.log(`From: ${event.From} Body:${event.Body}`);

@@ -2,10 +2,8 @@
 // If only conversation specified delete conversation
 // If Conversation and Partipant delete participant
 // if Conversation and Message delete message
-
-twilio = require('twilio');
 exports.handler = async function (context, event, callback) {
-  client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  client = context.getTwilioClient();
   const response = new Twilio.Response();
 
   response.appendHeader("Access-Control-Allow-Origin", "*");

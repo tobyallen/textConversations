@@ -2,12 +2,8 @@
 // Takes event and details Json Object
 // Returns Details of all conversations on Account.
 // If conversation SID is specified it returns the details of that specific conversation only.
-
-twilio = require('twilio');
-
-
 exports.handler = async function (context, event, callback) {
-  client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  client = context.getTwilioClient();
   const response = new Twilio.Response();
 
   response.appendHeader("Access-Control-Allow-Origin", "*");
