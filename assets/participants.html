@@ -79,7 +79,11 @@
       } else { 
         let partList = this.state.Participants.map(function(part) {
           return (
-              <li key={part.sid}> { part.identity ? part.identity : part.messagingBinding.address }-
+              <li key={part.sid}> { 
+                part.identity
+                  ? part.identity + ' -'
+                  : part.messagingBinding.address +' Proxy Address: '+ part.messagingBinding.proxy_address + ' -'
+                }
                   <span onClick={this.removeParticipant.bind(this, part.sid)} style={{'color': 'red'}}>Delete?</span>
               </li>
           );

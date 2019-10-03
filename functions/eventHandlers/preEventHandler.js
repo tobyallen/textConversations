@@ -15,8 +15,10 @@ exports.handler = async function (context, event, callback) {
 
     if (event.EventType == 'onMessageAdd') {
         let participant = await getParticipant(event.Author, event.ConversationSid);
-        var isChat = participant.identity ? true : true;
-        var name = participant.identity ? author : JSON.parse(participant.attributes).name
+        var isChat = participant.identity ? true : false;
+        let smsName = JSON.parse(participant.attributes).name ? JSON.parse(participant.attributes).name : 'User';
+        var name = isChat ? participant.identity : smsName;
+
         console.log(`Message from ${name} isChat:${isChat}`);
         //Default Response
         response.setBody({
