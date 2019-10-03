@@ -6,7 +6,8 @@ exports.handler = async function (context, event, callback) {
     console.log(`From: ${event.From} Body:${event.Body}`);
 
     if (event.Body.startsWith('@join')) {
-        var name = event.Body.replace('@join ', '');
+        var restOfMessage = event.Body.replace('@join ', '');
+        var name = restOfMessage ? restOfMessage : 'User';
         console.log(`Request from ${name} to join to conversation service`);
 
         try {
