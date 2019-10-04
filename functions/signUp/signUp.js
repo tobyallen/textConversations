@@ -15,7 +15,7 @@ exports.handler = async function (context, event, callback) {
 
     console.log(event);
 
-    var firstMessage = `New Conversation with ${event.name}. They're interested in ${event.info}`
+    var firstMessage = `We're connect you with Bob, a ${event.info}. To talk about your needs.`
 
     try {
         let conversation = await client.conversations.conversations
