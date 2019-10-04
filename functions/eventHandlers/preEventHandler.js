@@ -24,51 +24,58 @@ exports.handler = async function (context, event, callback) {
         response.setBody({
             'body': `[${name}]:${event.Body}`
         });
-        if (!isChat) {
-            var fromNum = participant.messagingBinding.proxy_address;
-            var toNum = participant.messagingBinding.address;
-            var checkCredit = RegExp('([0-9- ]{15,16})');
-            if (checkCredit.test(event.Body)) {
-                console.log('Detected a Credit Card')
+
+        var checkCredit = RegExp('([0-9- ]{15,16})');
+        if (checkCredit.test(event.Body)) {
+            console.log('Detected a Credit Card')
+
+            if (!isChat) {
+                //Send a Message to non-chat user to say it was redacted.
                 let msg = await client.messages
                     .create({
                         body: 'Hi there, we detected a credit card. Never send credit card information over in an SMS.',
-                        from: fromNum,
-                        to: toNum
+                        from: participant.messagingBinding.proxy_address,
+                        to: participant.messagingBinding.address
                     })
                 console.log(msg.body);
-                response.setBody({
-                    'body': 'Chief Compliance Bot- A credit card was redacted.',
-                    'author': 'Chief Compliance Bot'
-                });
-            } else if (event.Body.startsWith('@leave')) {
-                console.log(`Request from ${name} to leave the conversation service`);
+            }
 
-                let removal = await client.conversations
-                    .conversations(event.ConversationSid)
-                    .participants(participant.sid)
-                    .remove()
+            response.setBody({
+                'body': 'Chief Compliance Bot- A credit card was redacted.',
+                'author': 'Chief Compliance Bot'
+            });
+        } else if (event.Body.startsWith('@leave')) {
+            console.log(`Request from ${name} to leave the conversation service`);
 
-                console.log(removal);
+            let removal = await client.conversations
+                .conversations(event.ConversationSid)
+                .participants(participant.sid)
+                .remove()
 
+            console.log(removal);
+            if (!isChat) {
+                // Send a message to non-chat user telling them how to re-join.
                 let msg = await client.messages
                     .create({
                         body: 'We\'ve removed you. To rejoin reply back with \'@join <Your Name>\'',
-                        from: fromNum,
-                        to: toNum
+                        from: participant.messagingBinding.proxy_address,
+                        to: participant.messagingBinding.address
                     })
+            }
+            response.setBody({
+                'body': `[${name} has left the conversation.]`
+            });
+        }  
 
-                response.setBody({
-                    'body': `[${name} has left the conversation.]`
-                });
-            } else if (event.Body.startsWith('@call')) {
+        if (!isChat) {
+            if (event.Body.startsWith('@call')) {
                 console.log(`Request from ${name} to for a call`);
 
                 let call = await client.calls
                     .create({
                         url: process.env.CALL_TWIML_BIN,
-                        from: fromNum,
-                        to: toNum 
+                        from: participant.messagingBinding.proxy_address,
+                        to: participant.messagingBinding.address 
                     })
 
                 console.log(call);
@@ -80,12 +87,23 @@ exports.handler = async function (context, event, callback) {
                 let msg = await client.messages
                     .create({
                         body: `Hi ${name}, To leave at anytime reply \'@leave\' To get a get a test call send \'@call\' To view help message send \'@help\'`,
-                        from: fromNum,
-                        to: toNum
+                        from: participant.messagingBinding.proxy_address,
+                        to: participant.messagingBinding.address
                     })
                 // Set Status to 403 to reject the message and not post to channel.
                 response.setStatusCode(403);
             }
+        }
+    } else if (event.EventType == 'onParticipantAdd') {
+        //Participant Added Event if the user added is an SMS user Send them the welcome message.
+        console.log('Participant Added')
+        if ( event.MessagingBinding.Type == 'SMS') {
+            let msg = await client.messages
+                .create({
+                    body: `Hi you've been added to a conversation, To leave at anytime reply \'@leave\' To get a get a test call send \'@call\' To view help message send \'@help\'`,
+                    from: event.MessagingBinding.ProxyAddress,
+                    to: event.MessagingBinding.Address
+                })
         }
     }
     callback(null, response);
