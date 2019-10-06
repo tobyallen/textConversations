@@ -14,8 +14,9 @@ exports.handler = async function (context, event, callback) {
     response.appendHeader("Content-Type", "application/json");
 
     console.log(event);
+    
 
-    var firstMessage = `We're connect you with Bob, a ${event.info}. To talk about your needs.`
+    var firstMessage = `Hi ${event.name} we're connecting you with a ${event.info}, Bob.`
 
     try {
         let conversation = await client.conversations.conversations
@@ -26,14 +27,17 @@ exports.handler = async function (context, event, callback) {
                 })
             })
         console.log(`Conversation SID:${conversation.sid}`);
-
+        let attributes = JSON.stringify({
+            'name': `${event.name}`
+        });
         console.log(`Adding participant: ${event.number} ProxyAddress:${process.env.SIGNUP_PHONE}`);
         let participant = await client.conversations
             .conversations(conversation.sid)
             .participants
             .create({
                 'messagingBinding.address': `+${event.number}`,
-                'messagingBinding.proxyAddress': `${process.env.SIGNUP_PHONE}`
+                'messagingBinding.proxyAddress': `${process.env.SIGNUP_PHONE}`,
+                'attributes': attributes
             })
         console.log(`SMS participant SID:${participant.sid}`)
         let boothChat = await await client.conversations
