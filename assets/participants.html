@@ -33,7 +33,8 @@
         let sid = search.replace('?sid=','');
         this.setState({...this.state, convSID: sid});
         this.fetchParts(sid);
-        // this.timer = setInterval(() => this.fetchConv(), 5000);
+                this.timer = setInterval(() => this.fetchParts(), 10000);
+
     }
 
     async fetchParts(sid) {

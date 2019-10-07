@@ -11,7 +11,7 @@ exports.handler = async function (context, event, callback) {
     response.appendHeader("Access-Control-Allow-Origin", "*");
     response.appendHeader("Access-Control-Allow-Methods", "GET, POST");
     response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
-    response.appendHeader("Content-Type", "application/json");
+    response.appendHeader("Content-Type", "text/plain");
 
     console.log(event);
     
@@ -55,13 +55,15 @@ exports.handler = async function (context, event, callback) {
                 author: 'Twilio Expert Bot',
                 body: firstMessage
             })
-
-        console.log(`Info Message: ${infoMsg}`)
-
-        callback(null, infoMsg)
+        
+        
+        console.log(`Info Message: ${infoMsg.sid}`)
+        response.setBody("Success");
+        callback(null, response);
     } catch (err) {
         console.log(err);
-        callback(null, "Bugger")
+        response.setBody("Bugger");
+        callback(null, response)
     }
 };
 

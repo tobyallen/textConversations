@@ -33,7 +33,7 @@
         this.setState({...this.state, convSID: sid});
         this.fetchMessages(sid);
 
-        // this.timer = setInterval(() => this.fetchConv(), 5000);
+        this.timer = setInterval(() => this.fetchMessages(), 10000);
     }
 
     async fetchMessages(sid) {

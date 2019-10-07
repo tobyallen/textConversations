@@ -28,7 +28,7 @@
 
     componentDidMount() {
         this.fetchConv();
-        // this.timer = setInterval(() => this.fetchConv(), 5000);
+        this.timer = setInterval(() => this.fetchConv(), 10000);
     }
 
     async fetchConv() {
