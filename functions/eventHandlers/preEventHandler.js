@@ -4,6 +4,7 @@
 // Add logic to get sending number, add logic to not send messages to chat partipants
 
 twilio = require('twilio');
+const MonkeyLearn = require('monkeylearn');
 
 exports.handler = async function (context, event, callback) {
     client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -15,6 +16,7 @@ exports.handler = async function (context, event, callback) {
 
     if (event.EventType == 'onMessageAdd') {
         let participant = await getParticipant(event.Author, event.ConversationSid);
+        let requiresModeration = await moderateMessage(event.Body);
         var isChat = participant.identity ? true : false;
         let smsName = JSON.parse(participant.attributes).name ? JSON.parse(participant.attributes).name : 'User';
         var name = isChat ? participant.identity : smsName;
@@ -65,7 +67,21 @@ exports.handler = async function (context, event, callback) {
             response.setBody({
                 'body': `[${name} has left the conversation.]`
             });
-        }  
+        }  else if ( requiresModeration ) {
+            console.log('Someone has a potty mouth.');
+            if (!isChat) {
+                // Send a message to non-chat user telling them how to be more polite!
+                let msg = await client.messages
+                    .create({
+                        body: 'Plese refrain from using that sort of language.',
+                        from: participant.messagingBinding.proxy_address,
+                        to: participant.messagingBinding.address
+                    })
+            }
+
+            // Set Status to 403 to reject the message and not post to channel.
+            response.setStatusCode(403);
+        }
 
         if (!isChat) {
             if (event.Body.startsWith('@call')) {
@@ -144,3 +160,27 @@ async function getParticipant(author, conversationSid) {
     }
     return '';
 }
+
+// Profanity Filter Code
+async function moderateMessage(body) {
+    const ml = new MonkeyLearn(process.env.MONKEY_LEARN_TOKEN);
+    console.log('Checking', body);
+
+    try {
+        let result = await ml.classifiers.classify(process.env.PROFANITY_MODEL_ID, [body]);
+        let mlResultsArray = result.body;
+        console.log('ML returned', mlResultsArray.length);
+        let mlResult = mlResultsArray[0];
+        console.log(mlResult);
+        if (!mlResult.error) {
+            let classifications = mlResult.classifications;
+            console.log('Got Classifications:', classifications.length)
+            let profane = (classifications[0].tag_name == "profanity")
+            console.log('Profane?', profane);
+            return profane;
+        } 
+    } catch (err) {
+        console.log(err);
+        return false;
+    } 
+} 
